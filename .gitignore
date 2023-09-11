@@ -1,0 +1,9 @@
+.data
+.mnist_data
+.sample_CNN_padded_mnist
+.cifar_data
+.output
+.outputFile
+.idea
+
+*.png
