@@ -1,0 +1,33 @@
+Dec 28:
+
+Put a *2 multiplier on the color decoding in decoder_color to improve quality
+
+Change VAERecon to BothRecon for consistency
+
+For figure 7
+Encode shape and color separately, setting the other coefficient to 0
+Created new variables to store shapeonly and coloronly memories
+
+Change BPret variable to bothRet for consistency
+
+Removed Parentheses from file names  (bad practice)
+
+
+The binding analysis:
+    There was a bug in the computation of accuracy for different items.  I've collapsed same and different into one function and changed the
+    way it filters targets so that in the same condition it samples across all digit categories by default.
+
+
+Suggestion: If we're going to log transform L1 for Bengali, we need to do the same for L1 retrievals of MNIST
+
+
+Moved the code for generating Figure 9 into plots.py
+    (putting it in tokens_capacity.py was a lazy shortcut to getting it done quickly.  This is what leads to unreadable code)
+
+For Figure 11 I changed the name of the variable bs_testing.
+    One variable name should never mean two different things (i.e. batch size and then also to be re-used for a list of batch sizes)
+
+
+
+
+
