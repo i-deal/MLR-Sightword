@@ -46,7 +46,9 @@ def load_checkpoint(filepath):
     vae.train()
     return vae
 modelNumber = 1
-load_checkpoint('output/checkpoint_threeloss_singlegrad300_smfc.pth'.format(modelNumber=modelNumber))
+load_checkpoint('output/checkpoint_threeloss_singlegrad75_smfc.pth'.format(modelNumber=modelNumber))
+
+# reduce sw latent 2-3 dim, quantify sw error, retina error,
 
 bs =100
 data_set_flag_single ='sight_word_single'
@@ -57,16 +59,12 @@ train_loader_noSkip_sightword, train_loader_skip_sightword, test_loader_noSkip_s
 for epoch in range(1, 301):
     #modified to include color labels
     if epoch <= 0:
-        #train(epoch,'single', train_loader_noSkip_single, train_loader_skip_single, test_loader_noSkip_single)
-        pass
+        train(epoch,'single', train_loader_noSkip_single, train_loader_skip_single, test_loader_noSkip_single)
     elif epoch <= 200:
         if epoch%5==0:
-            #train(epoch,'single', train_loader_noSkip_single, train_loader_skip_single, test_loader_noSkip_single)
-            pass
+            train(epoch,'single', train_loader_noSkip_single, train_loader_skip_single, test_loader_noSkip_single)
         else:
             train(epoch,'sightword', train_loader_noSkip_sightword, train_loader_skip_sightword, test_loader_noSkip_sightword)
-    else:
-        pass
     
     colorlabels = np.random.randint(0,10,100000)#regenerate the list of color labels at the start of each test epoch
     numcolors = 0
