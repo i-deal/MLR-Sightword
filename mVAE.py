@@ -826,14 +826,14 @@ def loss_function_color(recon_x, x, mu, log_var):
     # make color-only (no shape) reconstruction and use that as the loss function
     recon = recon_x.clone().view(-1, 3, size1 * imgsize)
     # compute the maximum color for the r,g and b channels for each digit separately
-    maxr, maxi = torch.max(recon[:, 0, :], -1, keepdim=True)
-    maxg, maxi = torch.max(recon[:, 1, :], -1, keepdim=True)
+    #maxr, maxi = torch.max(recon[:, 0, :], -1, keepdim=True)
+    '''maxg, maxi = torch.max(recon[:, 1, :], -1, keepdim=True)
     maxb, maxi = torch.max(recon[:, 2, :], -1, keepdim=True)
     # now build a new reconsutrction that has only the max color, and no shape information at all
     recon[:, 0, :] = maxr
     recon[:, 1, :] = maxg
     recon[:, 2, :] = maxb
-    recon = recon.view(-1, size1 * imgsize * 3)
+    recon = recon.view(-1, size1 * imgsize * 3)'''
     maxr, maxi = torch.max(x[:, 0, :], -1, keepdim=True)
     maxg, maxi = torch.max(x[:, 1, :], -1, keepdim=True)
     maxb, maxi = torch.max(x[:, 2, :], -1, keepdim=True)
@@ -1041,14 +1041,12 @@ def train(epoch, whichdecode, train_loader_noSkip, train_loader_skip, test_loade
             )
         )
         sightword = False
-        if count % 10 == 0:
+        if count % 500 == 0:
             if whichdecode == 'single':
                 data_out = data_noSkip[0][0]
                 skip= True
             else:
-                #data_out = data_noSkip[0]
-                data_iter_test = iter(test_loader_noSkip)
-                data_out = data_iter_test.next()[0]
+                data_out = data_noSkip[0]
                 sightword = True
                 skip=False
             progress_out(data_out, epoch, count, skip = skip, sightword=sightword)
@@ -1056,10 +1054,31 @@ def train(epoch, whichdecode, train_loader_noSkip, train_loader_skip, test_loade
             if whichdecode == 'single':
                 data_out = data_skip[0][0]
                 progress_out(data_out, epoch, count, skip= True, sightword=sightword)
-            '''else:
-                data_out = data_skip[0]
-                sightword = True'''
-
+        
+        if whichdecode != 'single' and count % 600==0:
+            vae.eval()
+            #grayscale sample data, test dim 8, emnist dataset, most common two letter words...
+            data_iter_test = iter(test_loader_noSkip)
+            nonword_data = data_iter_test.next()[0].cuda()
+            maxr, maxi = torch.max(data[:, 0, :], -1, keepdim=True)
+            maxg, maxi = torch.max(data[:, 1, :], -1, keepdim=True)
+            maxb, maxi = torch.max(data[:, 2, :], -1, keepdim=True)
+            new_data = data.clone()
+            new_data[:, 0, :] = maxr
+            new_data[:, 1, :] = maxg
+            new_data[:, 2, :] = maxb
+            progress_out(nonword_data, epoch, count, skip = False, sightword=True)
+            recon_nonword, mu_color, log_var_color, mu_shape, log_var_shape, mu_location, log_var_location = vae(nonword_data, 'sightword', keepgrad)
+            maxr, maxi = torch.max(nonword_data[:, 0, :], -1, keepdim=True)
+            maxg, maxi = torch.max(nonword_data[:, 1, :], -1, keepdim=True)
+            maxb, maxi = torch.max(nonword_data[:, 2, :], -1, keepdim=True)
+            new_nonword = nonword_data.clone()
+            new_nonword[:, 0, :] = maxr
+            new_nonword[:, 1, :] = maxg
+            new_nonword[:, 2, :] = maxb
+            sightword_accuracy= F.mse_loss(recon_batch.view(100,3,28,56).cuda(),new_data.view(100,3,28,56).cuda())
+            nonword_accuracy = F.mse_loss(recon_nonword.view(100,3,28,56).cuda(),new_nonword.view(100,3,28,56).cuda())
+            print(f'sightword accuracy: {sightword_accuracy} nonword accuracy: {nonword_accuracy} dim: {z_dim}')
 
     print('====> Epoch: {} Average loss: {:.4f}'.format(epoch, train_loss / len(train_loader_noSkip.dataset)))
 
