@@ -183,19 +183,27 @@ def dataset_builder(data_set_flag, bs, return_class = False):
                 return transforms.ToTensor()(new_img), transforms.ToTensor()(img), position
         
         # Load MNIST datasets, order: [notional_retina, cropped_digit, one-hot_position_vector]   
-        train_dataset_single = datasets.MNIST(
+        train_dataset_single = datasets.EMNIST(
             root='./data',
+            split='byclass',
             train=True,
             download=True,
             transform=transforms.Compose([
                 Colorize_func,
+                lambda img: transforms.functional.rotate(img, -90),
+                lambda img: transforms.functional.hflip(img),
                 PadAndPosition(translate_across_retina(retina_size)),
             ])
         )
 
-        train_loader_single = torch.utils.data.DataLoader(train_dataset_single, shuffle = True, batch_size=bs, drop_last=True)
+        uppercase_indices = [idx for idx, target in enumerate(train_dataset_single.targets) if target in list(range(10,27))]
+        uppercase_subset = Subset(train_dataset_single, uppercase_indices)
+        indices = torch.arange(10000)
+        uppercase_subset= Subset(uppercase_subset, indices)
 
-        test_loader_single = torch.utils.data.DataLoader(train_dataset_single, shuffle = True, batch_size=bs, drop_last=True)
+        train_loader_single = torch.utils.data.DataLoader(uppercase_subset, shuffle = True, batch_size=bs, drop_last=True)
+
+        test_loader_single = torch.utils.data.DataLoader(uppercase_subset, shuffle = True, batch_size=bs, drop_last=True)
 
         train_loader_noSkip = train_loader_single
         train_loader_skip = train_loader_single
@@ -1060,27 +1068,19 @@ def train(epoch, whichdecode, train_loader_noSkip, train_loader_skip, test_loade
             #grayscale sample data, test dim 8, emnist dataset, most common two letter words...
             data_iter_test = iter(test_loader_noSkip)
             nonword_data = data_iter_test.next()[0].cuda()
-            maxr, maxi = torch.max(data[:, 0, :], -1, keepdim=True)
-            maxg, maxi = torch.max(data[:, 1, :], -1, keepdim=True)
-            maxb, maxi = torch.max(data[:, 2, :], -1, keepdim=True)
-            new_data = data.clone()
-            new_data[:, 0, :] = maxr
-            new_data[:, 1, :] = maxg
-            new_data[:, 2, :] = maxb
+            gray_data = data.view(-1, 3, imgsize, retina_size).mean(1)
+            gray_data = torch.stack([gray_data, gray_data, gray_data], dim=1)
             progress_out(nonword_data, epoch, count, skip = False, sightword=True)
             recon_nonword, mu_color, log_var_color, mu_shape, log_var_shape, mu_location, log_var_location = vae(nonword_data, 'sightword', keepgrad)
-            maxr, maxi = torch.max(nonword_data[:, 0, :], -1, keepdim=True)
-            maxg, maxi = torch.max(nonword_data[:, 1, :], -1, keepdim=True)
-            maxb, maxi = torch.max(nonword_data[:, 2, :], -1, keepdim=True)
-            new_nonword = nonword_data.clone()
-            new_nonword[:, 0, :] = maxr
-            new_nonword[:, 1, :] = maxg
-            new_nonword[:, 2, :] = maxb
-            sightword_accuracy= F.mse_loss(recon_batch.view(100,3,28,56).cuda(),new_data.view(100,3,28,56).cuda())
-            nonword_accuracy = F.mse_loss(recon_nonword.view(100,3,28,56).cuda(),new_nonword.view(100,3,28,56).cuda())
+            gray_nonword = nonword_data.view(-1, 3, imgsize, size1).mean(1)
+            gray_nonword = torch.stack([gray_nonword, gray_nonword, gray_nonword], dim=1)
+            sightword_accuracy= F.mse_loss(recon_batch.view(100,3,28,56).cuda(),gray_data.view(100,3,28,56).cuda())
+            nonword_accuracy = F.mse_loss(recon_nonword.view(100,3,28,56).cuda(),gray_nonword.view(100,3,28,56).cuda())
             print(f'sightword accuracy: {sightword_accuracy} nonword accuracy: {nonword_accuracy} dim: {z_dim}')
 
     print('====> Epoch: {} Average loss: {:.4f}'.format(epoch, train_loss / len(train_loader_noSkip.dataset)))
+    if whichdecode != 'single':
+        return sightword_accuracy, nonword_accuracy
 
 #compute avg loss of retinal recon w/ skip, w/o skip, increase fc?
 def test(whichdecode, test_loader_noSkip, test_loader_skip, bs):
