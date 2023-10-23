@@ -563,7 +563,18 @@ class VAE_CNN(nn.Module):
         hskip = self.fc8(h) # skip con fc2 to fc5
 
         return self.fc31(h), self.fc32(h), self.fc33(h), self.fc34(h), self.fc37(h), self.fc38(h), self.fc35(l), self.fc36(l), hskip # mu, log_var
-    
+
+    def sw_single_encoder(self, x):
+        h = self.relu(self.bn1(self.conv1(x)))
+        h = self.relu(self.bn2(self.conv2(h)))
+        h = self.relu(self.bn3(self.conv3(h)))
+        h = self.relu(self.bn4(self.conv4(h)))
+        h = h.view(-1,int(imgsize / 4) * int(imgsize / 4) * 16)
+        h = self.relu(self.fc_bn2(self.fc2(h)))
+        z_sightword = self.sampling(self.fc37(h), self.fc38(h))
+
+        return z_sightword
+
     def sampling_location(self, mu, log_var):
         std = (0.5 * log_var)
         eps = torch.randn_like(std)
