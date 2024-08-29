@@ -7,6 +7,8 @@
 colornames = ["red", "blue", "green", "purple", "yellow", "cyan", "orange", "brown", "pink", "white-ish"]
 # specified in "colorvals" variable below
 
+
+
 # also there is a skip connection from the first layer to the last layer to enable reconstructions of new stimuli
 # and the VAE bottleneck is split, having two different maps
 # one is trained with a loss function for color only (eliminating all shape info, reserving only the brightest color)
