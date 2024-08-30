@@ -11,7 +11,7 @@ colornames = ["red", "blue", "green", "purple", "yellow", "cyan", "orange", "bro
 # and the VAE bottleneck is split, having two different maps
 # one is trained with a loss function for color only (eliminating all shape info, reserving only the brightest color)
 # the other is trained with a loss function for shape only
-#
+
 
 # prerequisites
 import torch
