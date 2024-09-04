@@ -14,7 +14,7 @@ colornames = ["red", "blue", "green", "purple", "yellow", "cyan", "orange", "bro
 # one is trained with a loss function for color only (eliminating all shape info, reserving only the brightest color)
 # the other is trained with a loss function for shape only
 
-
+#ian
 # prerequisites
 import torch
 import numpy as np
